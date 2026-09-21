@@ -7,4 +7,5 @@
   <include file="changelog/001-schema.sql" relativeToChangelogFile="false"/>
   <include file="changelog/002-roles-grants.sql" relativeToChangelogFile="false"/>
   <include file="changelog/003-rls.sql" relativeToChangelogFile="false"/>
+  <include file="changelog/004-seed.sql" relativeToChangelogFile="false"/>
 </databaseChangeLog>

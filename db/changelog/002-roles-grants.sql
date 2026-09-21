@@ -22,3 +22,6 @@ grant select, insert on audit_log to equity_research, portfolio_risk, trade_exec
 
 create role app_pool login password 'app_pool_dev_only';
 grant equity_research, portfolio_risk, trade_execution, client_support to app_pool;
+
+--changeset someshjha:002b-audit-log-sequence-grant
+grant usage, select on audit_log_id_seq to equity_research, portfolio_risk, trade_execution, client_support;
