@@ -61,6 +61,17 @@
       "requiredActions": [],
       "credentials": [{"type": "password", "value": "dave_dev_only", "temporary": false}],
       "realmRoles": ["client_support"]
+    },
+    {
+      "username": "erin.norole",
+      "enabled": true,
+      "emailVerified": true,
+      "email": "erin.norole@example.com",
+      "firstName": "Erin",
+      "lastName": "Norole",
+      "requiredActions": [],
+      "credentials": [{"type": "password", "value": "erin_dev_only", "temporary": false}],
+      "realmRoles": []
     }
   ]
 }

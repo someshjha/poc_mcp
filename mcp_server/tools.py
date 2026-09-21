@@ -34,14 +34,30 @@ def _caller():
     return username, role
 
 
+def _safe_audit(conn, username, role, kind, name, decision, detail, scope=None):
+    """Best-effort audit write. A failure here (e.g. the connection that
+    just carried the original error is now unusable) must never mask the
+    result we're about to return, nor escape as a raw exception."""
+    try:
+        db.audit(conn, username, role, kind, name, decision, detail, scope=scope)
+    except Exception:
+        pass
+
+
 def _run(name: str, fn):
-    """Run fn(conn, username, role) -> result, auditing allow/deny/error."""
+    """Run fn(conn, username, role) -> result, auditing allow/deny/error.
+    Every db.get_connection()/db.audit() call is wrapped so that a DB or
+    audit-write failure can never itself escape as a raw exception -- this
+    function must always return a structured decision dict."""
     username, role = _caller()
     if role is None:
         detail = "token carries no recognized task-scope role"
-        conn = db.get_connection()
         try:
-            db.audit(
+            conn = db.get_connection()
+        except Exception as exc:
+            return {"decision": "error", "detail": f"could not connect to database: {exc}"}
+        try:
+            _safe_audit(
                 conn,
                 username,
                 _FALLBACK_ROLE_FOR_AUDIT,
@@ -54,18 +70,21 @@ def _run(name: str, fn):
         finally:
             conn.close()
         return {"decision": "deny", "detail": detail}
-    conn = db.get_connection()
+    try:
+        conn = db.get_connection()
+    except Exception as exc:
+        return {"decision": "error", "detail": f"could not connect to database: {exc}"}
     try:
         result = fn(conn, username, role)
-        db.audit(conn, username, role, "tool", name, "allow", "ok")
+        _safe_audit(conn, username, role, "tool", name, "allow", "ok")
         return {"decision": "allow", "result": result}
     except psycopg2.Error as exc:
         detail = str(exc).strip()
-        db.audit(conn, username, role, "tool", name, "deny", detail)
+        _safe_audit(conn, username, role, "tool", name, "deny", detail)
         return {"decision": "deny", "detail": detail}
     except Exception as exc:
         detail = str(exc)
-        db.audit(conn, username, role, "tool", name, "error", detail)
+        _safe_audit(conn, username, role, "tool", name, "error", detail)
         return {"decision": "error", "detail": detail}
     finally:
         conn.close()

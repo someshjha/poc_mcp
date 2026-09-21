@@ -20,6 +20,7 @@ USERS = {
     "bob.risk": "bob_dev_only",
     "carol.trader": "carol_dev_only",
     "dave.support": "dave_dev_only",
+    "erin.norole": "erin_dev_only",
 }
 
 FAILURES = []
@@ -91,6 +92,12 @@ async def main():
 
     r = await call(tokens["dave.support"], "get_audit_log", {})
     check("dave(client_support) can read his own audit log through the server", r["decision"] == "allow" and len(r["result"]) >= 1)
+
+    r = await call(tokens["erin.norole"], "list_tables", {})
+    check(
+        "erin(no task-scope role) is denied list_tables with the role-is-None detail",
+        r["decision"] == "deny" and r["detail"] == "token carries no recognized task-scope role",
+    )
 
     print()
     if FAILURES:

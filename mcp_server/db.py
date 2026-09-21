@@ -1,13 +1,17 @@
 """Postgres access scoped by task role + user identity, mirroring
 scripts/verify_scopes.py's run_as/audit pattern so the server enforces
 access the same way that script already proved the database does."""
+import os
 from contextlib import contextmanager
 
 import psycopg2
 
 from .scope import TASK_SCOPE_ROLES
 
-DSN = "host=localhost port=5432 dbname=financial_mcp user=app_pool password=app_pool_dev_only"
+DSN = os.environ.get(
+    "MCP_DB_DSN",
+    "host=localhost port=5432 dbname=financial_mcp user=app_pool password=app_pool_dev_only",
+)
 
 
 def get_connection():
