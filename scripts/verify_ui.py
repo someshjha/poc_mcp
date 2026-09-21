@@ -85,6 +85,28 @@ def main():
         after_logout = client.get(f"{BASE}/api/me", cookies=cookie_jar)
         check("logged out -> 401 again", after_logout.status_code == 401)
 
+        unauth_post = client.post(f"{BASE}/api/tools/place_order", json={})
+        check("unauthenticated POST /api/tools/place_order -> 401", unauth_post.status_code == 401)
+
+        erin_cookies = login(client, "erin.norole", "erin_dev_only")
+        erin_deny = client.post(f"{BASE}/api/tools/list_tables", json={}, cookies=erin_cookies).json()
+        check("erin.norole is denied list_tables through the UI", erin_deny.get("decision") == "deny")
+
+        carol_cookies = login(client, "carol.trader", "carol_dev_only")
+        carol_order = client.post(
+            f"{BASE}/api/tools/place_order",
+            json={"account_id": "ACC-1001", "ticker": "AAPL", "side": "buy", "quantity": 1},
+            cookies=carol_cookies,
+        ).json()
+        check("carol.trader can place_order through the UI", carol_order.get("decision") == "allow")
+
+    with httpx.Client(follow_redirects=False) as bogus_client:
+        bogus_callback = bogus_client.get(
+            f"{BASE}/auth/callback",
+            params={"code": "whatever", "state": "bogus-value-that-does-not-match"},
+        )
+        check("callback with bogus state -> 400", bogus_callback.status_code == 400)
+
     print()
     if FAILURES:
         print(f"{len(FAILURES)} check(s) FAILED:")

@@ -1,3 +1,7 @@
+function esc(value) {
+  return String(value).replace(/[&<>"']/g, (c) => ({ "&": "&amp;", "<": "&lt;", ">": "&gt;", '"': "&quot;", "'": "&#39;" }[c]));
+}
+
 const TOOLS = [
   { name: "list_tables", params: [] },
   { name: "describe_table", params: [{ name: "table", type: "string", required: true }] },
@@ -110,7 +114,7 @@ document.getElementById("load-schema").addEventListener("click", async () => {
       const described = await callTool("describe_table", { table });
       if (described.decision !== "allow") return "";
       const columns = described.result.columns;
-      return `<article class="panel schema-card"><h3>${table}</h3><table><thead><tr><th>Column</th></tr></thead><tbody>${columns.map((c) => `<tr><td>${c}</td></tr>`).join("")}</tbody></table></article>`;
+      return `<article class="panel schema-card"><h3>${esc(table)}</h3><table><thead><tr><th>Column</th></tr></thead><tbody>${columns.map((c) => `<tr><td>${esc(c)}</td></tr>`).join("")}</tbody></table></article>`;
     })
   );
   document.getElementById("schema-grid").innerHTML = cards.join("");
@@ -129,7 +133,7 @@ document.getElementById("load-audit").addEventListener("click", async () => {
       .reverse()
       .map(
         (e) =>
-          `<tr class="decision-${e.decision}"><td>${e.id}</td><td>${e.at}</td><td>${e.kind}</td><td>${e.name}</td><td><span class="decision-badge">${e.decision}</span></td><td>${e.detail ?? ""}</td></tr>`
+          `<tr class="decision-${esc(e.decision)}"><td>${esc(e.id)}</td><td>${esc(e.at)}</td><td>${esc(e.kind)}</td><td>${esc(e.name)}</td><td><span class="decision-badge">${esc(e.decision)}</span></td><td>${esc(e.detail ?? "")}</td></tr>`
       )
       .join("") || `<tr><td colspan="6">No calls yet.</td></tr>`;
 });

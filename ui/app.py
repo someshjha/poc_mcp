@@ -61,20 +61,31 @@ def login(request: Request):
 
 
 @app.get("/auth/callback")
-def auth_callback(request: Request, code: str, state: str):
+def auth_callback(request: Request, code: str | None = None, state: str | None = None):
+    if code is None:
+        return JSONResponse(
+            {
+                "error": request.query_params.get("error", "login_failed"),
+                "detail": request.query_params.get("error_description", "No authorization code received"),
+            },
+            status_code=400,
+        )
     if state != request.session.get("oauth_state"):
         return JSONResponse({"error": "invalid state"}, status_code=400)
-    resp = httpx.post(
-        f"{KEYCLOAK_URL}/realms/{REALM}/protocol/openid-connect/token",
-        data={
-            "grant_type": "authorization_code",
-            "client_id": CLIENT_ID,
-            "code": code,
-            "redirect_uri": REDIRECT_URI,
-        },
-        timeout=10,
-    )
-    resp.raise_for_status()
+    try:
+        resp = httpx.post(
+            f"{KEYCLOAK_URL}/realms/{REALM}/protocol/openid-connect/token",
+            data={
+                "grant_type": "authorization_code",
+                "client_id": CLIENT_ID,
+                "code": code,
+                "redirect_uri": REDIRECT_URI,
+            },
+            timeout=10,
+        )
+        resp.raise_for_status()
+    except httpx.HTTPStatusError as exc:
+        return JSONResponse({"error": "token_exchange_failed", "detail": exc.response.text}, status_code=502)
     access_token = resp.json()["access_token"]
     claims = _decode_claims_unverified(access_token)
     request.session["access_token"] = access_token
@@ -119,6 +130,8 @@ async def call_tool(name: str, request: Request):
                     text = result.content[0].text if result.content else "unknown error"
                     return {"decision": "error", "detail": text}
                 return json.loads(result.content[0].text)
+    except Exception as exc:
+        return {"decision": "error", "detail": f"MCP call failed: {exc}"}
     finally:
         await http_client.aclose()
 

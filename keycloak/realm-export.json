@@ -14,7 +14,9 @@
       "clientId": "mcp-server",
       "publicClient": true,
       "directAccessGrantsEnabled": true,
-      "enabled": true
+      "enabled": true,
+      "redirectUris": ["http://localhost:5000/auth/callback"],
+      "webOrigins": ["http://localhost:5000"]
     }
   ],
   "users": [
