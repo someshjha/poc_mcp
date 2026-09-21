@@ -4,7 +4,7 @@ Real implementation of the "scoped financial-data tools for agents" proof of con
 
 ## Status
 
-Phase 1 (Postgres schema, roles, RLS), Phase 2 (MCP server + Keycloak auth), Phase 3 (showcase UI), and Phase 4 (containerize + kind) are complete and locally verified. Argo CD deployment is a later phase, not yet built.
+Phase 1 (Postgres schema, roles, RLS), Phase 2 (MCP server + Keycloak auth), Phase 3 (showcase UI), Phase 4 (containerize + kind), and Phase 5 (Argo CD GitOps) are complete and locally verified.
 
 ## Phase 1 quickstart
 
@@ -97,3 +97,24 @@ java -jar karate/karate.jar karate/scoped_access.feature
 Open `http://localhost:5000/` in a browser to use the UI exactly as in Phase 3, now backed by the Kubernetes deployment instead of host processes.
 
 Teardown: `kind delete cluster --name financial-mcp`.
+
+## Phase 5 quickstart (Argo CD GitOps)
+
+Requires everything Phase 4 needs, plus a pushed branch (Argo CD syncs from git, not your working tree).
+
+```bash
+git push -u origin claude/db-schema-rls
+argocd/bootstrap.sh
+kubectl get application financial-mcp -n argocd
+pip install -r scripts/requirements.txt -r ui/requirements.txt
+python3 scripts/verify_scopes.py
+python3 scripts/verify_mcp_server.py
+python3 scripts/verify_ui.py
+java -jar karate/karate.jar karate/scoped_access.feature
+```
+
+`argocd/bootstrap.sh` creates (or reuses) the `kind` cluster, builds and loads the same three local images Phase 4 used, installs Argo CD, and applies a single `Application` that syncs everything in `k8s/` from this repo's `claude/db-schema-rls` branch -- change `targetRevision` in `argocd/application.yaml` to `main` once this work is merged. From here on, `kubectl apply` is no longer how you deploy: edit a manifest, commit, push, and Argo CD reconciles the cluster automatically (`syncPolicy.automated` with `selfHeal: true` -- it also reverts any manual `kubectl edit` drift back to what's in git).
+
+Argo CD UI: `kubectl port-forward svc/argocd-server -n argocd 8081:443`, then open `https://localhost:8081` (username `admin`, password printed by `argocd/install.sh`).
+
+Teardown: `kind delete cluster --name financial-mcp` (also removes Argo CD, which lives in the same cluster).
