@@ -4,7 +4,7 @@ Real implementation of the "scoped financial-data tools for agents" proof of con
 
 ## Status
 
-This repo currently implements **Phase 1 only**: the Postgres schema, roles, grants, and Row-Level Security policies, managed as Liquibase changelogs, verified locally. The MCP server, Keycloak, showcase UI, and Kubernetes/Argo CD deployment are later phases, not yet built.
+Phase 1 (Postgres schema, roles, RLS) and Phase 2 (MCP server + Keycloak auth) are complete and locally verified. The showcase UI and Kubernetes/Argo CD deployment are later phases, not yet built.
 
 ## Phase 1 quickstart
 
@@ -26,3 +26,17 @@ To reset the database and start clean:
 ```bash
 docker compose down -v
 ```
+
+## Phase 2 quickstart
+
+Requires everything Phase 1 needs, plus Keycloak (already added to `docker-compose.yml`).
+
+```bash
+docker compose up -d postgres keycloak
+docker compose run --rm liquibase
+pip install -r scripts/requirements.txt
+uvicorn mcp_server.server:app --port 8000 &
+python3 scripts/verify_mcp_server.py
+```
+
+`verify_mcp_server.py` proves, through a real MCP client and real Keycloak-issued tokens, that the running server enforces the same task-scope and account-ownership boundaries `verify_scopes.py` already proved directly against Postgres -- this time end-to-end through the actual authentication and tool-call path.
