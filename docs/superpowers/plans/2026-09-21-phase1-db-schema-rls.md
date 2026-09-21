@@ -244,7 +244,12 @@ Expected: 8 tables listed — `accounts`, `account_owners`, `positions`, `orders
 
 ```bash
 git add db/changelog/001-schema.sql
-git commit -m "Add schema changeset: accounts, positions, orders, transactions, market_data, fundamentals, account_owners, audit_log"
+git commit -m "$(cat <<'EOF'
+Add schema changeset: accounts, positions, orders, transactions, market_data, fundamentals, account_owners, audit_log
+
+Co-Authored-By: Claude Sonnet 5 <noreply@anthropic.com>
+EOF
+)"
 ```
 
 ---
@@ -329,7 +334,12 @@ Expected: 4 rows — `equity_research`, `portfolio_risk`, `trade_execution`, `cl
 
 ```bash
 git add db/changelog/002-roles-grants.sql db/changelog/changelog-master.xml
-git commit -m "Add task-scope roles, table grants, and app_pool login role"
+git commit -m "$(cat <<'EOF'
+Add task-scope roles, table grants, and app_pool login role
+
+Co-Authored-By: Claude Sonnet 5 <noreply@anthropic.com>
+EOF
+)"
 ```
 
 ---
@@ -410,7 +420,12 @@ Expected: `rowsecurity = t` for `accounts`, `orders`, `positions`, `transactions
 
 ```bash
 git add db/changelog/003-rls.sql db/changelog/changelog-master.xml
-git commit -m "Add Row-Level Security policies scoped to account_owners"
+git commit -m "$(cat <<'EOF'
+Add Row-Level Security policies scoped to account_owners
+
+Co-Authored-By: Claude Sonnet 5 <noreply@anthropic.com>
+EOF
+)"
 ```
 
 ---
@@ -755,7 +770,12 @@ docker compose down -v
 
 ```bash
 git add db/changelog/004-seed.sql db/changelog/changelog-master.xml scripts/verify_scopes.py scripts/requirements.txt README.md
-git commit -m "Add seed data, verify_scopes.py, and README"
+git commit -m "$(cat <<'EOF'
+Add seed data, verify_scopes.py, and README
+
+Co-Authored-By: Claude Sonnet 5 <noreply@anthropic.com>
+EOF
+)"
 ```
 
 ---
