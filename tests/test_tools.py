@@ -63,6 +63,39 @@ class ToolQueriesTest(unittest.TestCase):
         finally:
             conn.close()
 
+    def test_audit_scope_param_overrides_role_in_audit_log_row(self):
+        """db.audit's `scope` parameter, added to fix tools.py's _run()
+        silently skipping the audit for a token with no recognized
+        task-scope role: `role` still drives SET LOCAL ROLE, but the
+        audit_log row's `scope` column should honestly reflect whatever
+        `scope` was passed, not the `role` used for the SET LOCAL ROLE."""
+        conn = db.get_connection()
+        try:
+            db.audit(
+                conn,
+                "eve.noscope",
+                "equity_research",
+                "tool",
+                "unit_test_no_scope_probe",
+                "deny",
+                "token carries no recognized task-scope role",
+                scope="none",
+            )
+            with db.scoped_cursor(conn, "eve.noscope", "equity_research") as cur:
+                cur.execute(
+                    "select scope, user_id, decision from audit_log where name = %s order by id desc limit 1",
+                    ("unit_test_no_scope_probe",),
+                )
+                row = cur.fetchone()
+            self.assertIsNotNone(row)
+            scope, user_id, decision = row
+            self.assertEqual(scope, "none")
+            self.assertNotEqual(scope, "equity_research")
+            self.assertEqual(user_id, "eve.noscope")
+            self.assertEqual(decision, "deny")
+        finally:
+            conn.close()
+
 
 if __name__ == "__main__":
     unittest.main()

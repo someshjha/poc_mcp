@@ -7,7 +7,15 @@ import psycopg2
 from mcp.server.auth.middleware.auth_context import get_access_token
 
 from . import db
-from .scope import resolve_scope
+from .scope import TASK_SCOPE_ROLES, resolve_scope
+
+# Used only to satisfy scoped_cursor/audit's SET LOCAL ROLE mechanics when a
+# caller's token carries no recognized task-scope role -- all four roles
+# have identical INSERT/SELECT grants on audit_log, so which one runs this
+# one INSERT is immaterial. The audited row's `scope` column still records
+# the honest truth (see _NO_SCOPE_MARKER below), not this fallback name.
+_FALLBACK_ROLE_FOR_AUDIT = TASK_SCOPE_ROLES[0]
+_NO_SCOPE_MARKER = "none"
 
 SCHEMA = {
     "accounts": ["account_id", "owner_name", "account_type", "opened_at"],
@@ -30,7 +38,22 @@ def _run(name: str, fn):
     """Run fn(conn, username, role) -> result, auditing allow/deny/error."""
     username, role = _caller()
     if role is None:
-        return {"decision": "deny", "detail": "token carries no recognized task-scope role"}
+        detail = "token carries no recognized task-scope role"
+        conn = db.get_connection()
+        try:
+            db.audit(
+                conn,
+                username,
+                _FALLBACK_ROLE_FOR_AUDIT,
+                "tool",
+                name,
+                "deny",
+                detail,
+                scope=_NO_SCOPE_MARKER,
+            )
+        finally:
+            conn.close()
+        return {"decision": "deny", "detail": detail}
     conn = db.get_connection()
     try:
         result = fn(conn, username, role)
