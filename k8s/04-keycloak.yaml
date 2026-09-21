@@ -1,0 +1,56 @@
+apiVersion: apps/v1
+kind: Deployment
+metadata:
+  name: keycloak
+  namespace: financial-mcp
+spec:
+  replicas: 1
+  selector:
+    matchLabels: { app: keycloak }
+  template:
+    metadata:
+      labels: { app: keycloak }
+    spec:
+      containers:
+        - name: keycloak
+          image: quay.io/keycloak/keycloak:26.0
+          args: ["start-dev", "--import-realm"]
+          envFrom:
+            - secretRef: { name: keycloak-credentials }
+          ports:
+            - containerPort: 8080
+          volumeMounts:
+            - name: realm-import
+              mountPath: /opt/keycloak/data/import
+          readinessProbe:
+            httpGet: { path: /realms/financial-mcp, port: 8080 }
+            initialDelaySeconds: 15
+            periodSeconds: 5
+            failureThreshold: 20
+      volumes:
+        - name: realm-import
+          configMap: { name: keycloak-realm-export }
+---
+apiVersion: v1
+kind: Service
+metadata:
+  name: keycloak
+  namespace: financial-mcp
+spec:
+  selector: { app: keycloak }
+  ports:
+    - port: 8080
+      targetPort: 8080
+---
+apiVersion: v1
+kind: Service
+metadata:
+  name: keycloak-external
+  namespace: financial-mcp
+spec:
+  type: NodePort
+  selector: { app: keycloak }
+  ports:
+    - port: 8080
+      targetPort: 8080
+      nodePort: 30080

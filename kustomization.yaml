@@ -1,0 +1,23 @@
+apiVersion: kustomize.config.k8s.io/v1beta1
+kind: Kustomization
+namespace: financial-mcp
+resources:
+  - k8s/00-namespace.yaml
+  - k8s/01-secrets.yaml
+  - k8s/02-postgres.yaml
+  - k8s/04-keycloak.yaml
+  - k8s/05-liquibase-job.yaml
+  - k8s/06-mcp-server.yaml
+  - k8s/07-ui.yaml
+configMapGenerator:
+  - name: keycloak-realm-export
+    files:
+      - realm.json=keycloak/realm-export.json
+  - name: liquibase-changelog
+    files:
+      - db/liquibase.properties
+      - db/changelog/changelog-master.xml
+      - db/changelog/001-schema.sql
+      - db/changelog/002-roles-grants.sql
+      - db/changelog/003-rls.sql
+      - db/changelog/004-seed.sql

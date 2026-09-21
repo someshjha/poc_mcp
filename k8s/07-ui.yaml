@@ -1,0 +1,58 @@
+apiVersion: apps/v1
+kind: Deployment
+metadata:
+  name: ui
+  namespace: financial-mcp
+spec:
+  replicas: 1
+  selector:
+    matchLabels: { app: ui }
+  template:
+    metadata:
+      labels: { app: ui }
+    spec:
+      containers:
+        - name: ui
+          image: poc-mcp/ui:local
+          imagePullPolicy: Never
+          env:
+            - name: KEYCLOAK_URL
+              value: "http://keycloak.financial-mcp.svc.cluster.local:8080"
+            - name: KEYCLOAK_PUBLIC_URL
+              value: "http://localhost:8080"
+            - name: UI_REDIRECT_URI
+              value: "http://localhost:5000/auth/callback"
+            - name: MCP_SERVER_URL
+              value: "http://mcp-server.financial-mcp.svc.cluster.local:8000/mcp"
+          envFrom:
+            - secretRef: { name: ui-session-secret }
+          ports:
+            - containerPort: 5000
+          readinessProbe:
+            tcpSocket: { port: 5000 }
+            initialDelaySeconds: 3
+            periodSeconds: 3
+---
+apiVersion: v1
+kind: Service
+metadata:
+  name: ui
+  namespace: financial-mcp
+spec:
+  selector: { app: ui }
+  ports:
+    - port: 5000
+      targetPort: 5000
+---
+apiVersion: v1
+kind: Service
+metadata:
+  name: ui-external
+  namespace: financial-mcp
+spec:
+  type: NodePort
+  selector: { app: ui }
+  ports:
+    - port: 5000
+      targetPort: 5000
+      nodePort: 30500
