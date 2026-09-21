@@ -45,3 +45,15 @@ python3 scripts/verify_mcp_server.py
 `docker compose up -d keycloak` only waits for the container to be created, not for Keycloak to finish importing the realm and serving `/realms/financial-mcp` (roughly 10 seconds) -- the `until` loop above polls for that readiness before anything tries to authenticate against it.
 
 `verify_mcp_server.py` proves, through a real MCP client and real Keycloak-issued tokens, that the running server enforces the same task-scope and account-ownership boundaries `verify_scopes.py` already proved directly against Postgres -- this time end-to-end through the actual authentication and tool-call path.
+
+## Karate suite (independent third proof)
+
+A [Karate](https://github.com/karatelabs/karate) suite in `karate/` proves the exact same 13 scenarios `verify_mcp_server.py` does, driven by a completely independent HTTP client (Java, not Python) speaking the raw MCP JSON-RPC/SSE protocol directly -- useful as a standard, tool-agnostic regression suite that doesn't depend on this project's own Python code being correct.
+
+```bash
+# with the Phase 2 stack already up (postgres, keycloak, migrated, uvicorn running -- see above)
+karate/download-karate.sh
+java -jar karate/karate.jar karate/scoped_access.feature
+```
+
+Expect `scenarios: 13 | passed: 13 | failed: 0`. An HTML report is written to `target/karate-reports/`.
