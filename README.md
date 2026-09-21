@@ -4,7 +4,7 @@ Real implementation of the "scoped financial-data tools for agents" proof of con
 
 ## Status
 
-Phase 1 (Postgres schema, roles, RLS), Phase 2 (MCP server + Keycloak auth), and Phase 3 (showcase UI) are complete and locally verified. Kubernetes/Argo CD deployment is a later phase, not yet built.
+Phase 1 (Postgres schema, roles, RLS), Phase 2 (MCP server + Keycloak auth), Phase 3 (showcase UI), and Phase 4 (containerize + kind) are complete and locally verified. Argo CD deployment is a later phase, not yet built.
 
 ## Phase 1 quickstart
 
@@ -77,3 +77,23 @@ python3 scripts/verify_ui.py
 Then open `http://localhost:5000/` in a browser and log in as any of the five demo users (`alice.research`/`alice_dev_only`, `bob.risk`/`bob_dev_only`, `carol.trader`/`carol_dev_only`, `dave.support`/`dave_dev_only`, `erin.norole`/`erin_dev_only`) to see the scoped-access boundary work live, through a real login.
 
 Stop both background servers when done: `pkill -f "uvicorn mcp_server.server"`, `pkill -f "uvicorn ui.app"`.
+
+## Phase 4 quickstart
+
+Requires Docker, [kind](https://kind.sigs.k8s.io/), and `kubectl`, in addition to everything Phase 3 needs.
+
+```bash
+k8s/bootstrap.sh
+pip install -r scripts/requirements.txt -r ui/requirements.txt
+python3 scripts/verify_scopes.py
+python3 scripts/verify_mcp_server.py
+python3 scripts/verify_ui.py
+karate/download-karate.sh
+java -jar karate/karate.jar karate/scoped_access.feature
+```
+
+`k8s/bootstrap.sh` creates a local `kind` cluster (or reuses one already named `financial-mcp`), builds and loads the `mcp-server`/`ui`/`liquibase` images, and applies every manifest in `k8s/` -- Postgres, a Liquibase migration Job, Keycloak, the MCP server, and the UI, all in the `financial-mcp` namespace. Every host port matches what Phases 1-3 already used (`5432`/`8080`/`8000`/`5000`), so every verification script and the Karate suite above run completely unmodified against the cluster.
+
+Open `http://localhost:5000/` in a browser to use the UI exactly as in Phase 3, now backed by the Kubernetes deployment instead of host processes.
+
+Teardown: `kind delete cluster --name financial-mcp`.
