@@ -24,6 +24,8 @@ spec:
               value: "http://keycloak.financial-mcp.svc.cluster.local:8080/realms/financial-mcp"
             - name: MCP_RESOURCE_SERVER_URL
               value: "http://localhost:8000"
+            - name: MCP_ALLOWED_HOSTS
+              value: "mcp-server.financial-mcp.svc.cluster.local:8000"
           ports:
             - containerPort: 8000
           readinessProbe:
