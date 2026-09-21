@@ -39,6 +39,10 @@ kubectl apply -f k8s/02-postgres.yaml
 echo "Waiting for Postgres..."
 kubectl rollout status deployment/postgres -n "$NAMESPACE" --timeout=120s
 
+# A completed Job with an unchanged spec is a no-op on re-apply, so a
+# re-run of this script wouldn't pick up new changelog files -- delete any
+# prior run first so this script stays safe to re-run after changelog edits.
+kubectl delete job liquibase-migrate -n "$NAMESPACE" --ignore-not-found
 kubectl apply -f k8s/05-liquibase-job.yaml
 echo "Waiting for Liquibase migration Job..."
 kubectl wait --for=condition=complete job/liquibase-migrate -n "$NAMESPACE" --timeout=120s
@@ -46,7 +50,14 @@ kubectl wait --for=condition=complete job/liquibase-migrate -n "$NAMESPACE" --ti
 kubectl apply -f k8s/04-keycloak.yaml
 echo "Waiting for Keycloak..."
 kubectl rollout status deployment/keycloak -n "$NAMESPACE" --timeout=180s
-until [ "$(curl -s -o /dev/null -w '%{http_code}' http://localhost:8080/realms/financial-mcp)" = "200" ]; do sleep 2; done
+for _ in $(seq 1 60); do
+  [ "$(curl -s -o /dev/null -w '%{http_code}' http://localhost:8080/realms/financial-mcp)" = "200" ] && break
+  sleep 2
+done
+if [ "$(curl -s -o /dev/null -w '%{http_code}' http://localhost:8080/realms/financial-mcp)" != "200" ]; then
+  echo "ERROR: Keycloak did not start serving realm 'financial-mcp' within 120s (Deployment is Available, but the realm import may have failed -- check: kubectl logs -n $NAMESPACE deployment/keycloak)" >&2
+  exit 1
+fi
 
 kubectl apply -f k8s/06-mcp-server.yaml
 kubectl apply -f k8s/07-ui.yaml

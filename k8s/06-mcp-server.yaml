@@ -15,9 +15,19 @@ spec:
         - name: mcp-server
           image: poc-mcp/mcp-server:local
           imagePullPolicy: Never
+          envFrom:
+            - secretRef: { name: mcp-db-credentials }
           env:
-            - name: MCP_DB_DSN
-              value: "host=postgres.financial-mcp.svc.cluster.local port=5432 dbname=financial_mcp user=app_pool password=app_pool_dev_only"
+            # KEYCLOAK_ISSUER_URL stays the externally-reachable URL (not the
+            # internal Service DNS below) because it must equal the `iss`
+            # claim Keycloak stamps into tokens -- which, for the browser's
+            # authorization-code login, is fixed at the front-channel /auth
+            # request's Host header (http://localhost:8080, via kind's port
+            # mapping), not by whichever URL later calls /token or fetches
+            # JWKS. A token minted via a direct/password grant against the
+            # *internal* URL would carry a different iss and be rejected --
+            # not exercised by this system today (the UI only does the
+            # browser flow), but worth remembering before adding one.
             - name: KEYCLOAK_ISSUER_URL
               value: "http://localhost:8080/realms/financial-mcp"
             - name: KEYCLOAK_JWKS_URL
