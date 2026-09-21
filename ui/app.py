@@ -20,6 +20,7 @@ from mcp.client.streamable_http import streamable_http_client
 from starlette.middleware.sessions import SessionMiddleware
 
 KEYCLOAK_URL = os.environ.get("KEYCLOAK_URL", "http://localhost:8080")
+KEYCLOAK_PUBLIC_URL = os.environ.get("KEYCLOAK_PUBLIC_URL", KEYCLOAK_URL)
 REALM = "financial-mcp"
 CLIENT_ID = "mcp-server"
 REDIRECT_URI = os.environ.get("UI_REDIRECT_URI", "http://localhost:5000/auth/callback")
@@ -53,7 +54,7 @@ def login(request: Request):
     state = secrets.token_urlsafe(16)
     request.session["oauth_state"] = state
     auth_url = (
-        f"{KEYCLOAK_URL}/realms/{REALM}/protocol/openid-connect/auth"
+        f"{KEYCLOAK_PUBLIC_URL}/realms/{REALM}/protocol/openid-connect/auth"
         f"?client_id={CLIENT_ID}&response_type=code"
         f"&redirect_uri={REDIRECT_URI}&scope=openid&state={state}"
     )

@@ -9,11 +9,12 @@ from . import tools
 from .token_verifier import KeycloakTokenVerifier
 
 ISSUER_URL = os.environ.get("KEYCLOAK_ISSUER_URL", "http://localhost:8080/realms/financial-mcp")
+JWKS_BASE_URL = os.environ.get("KEYCLOAK_JWKS_URL")  # None -> defaults to ISSUER_URL
 RESOURCE_SERVER_URL = os.environ.get("MCP_RESOURCE_SERVER_URL", "http://localhost:8000")
 
 server = MCPServer(
     "financial-mcp",
-    token_verifier=KeycloakTokenVerifier(ISSUER_URL),
+    token_verifier=KeycloakTokenVerifier(ISSUER_URL, jwks_base_url=JWKS_BASE_URL),
     auth=AuthSettings(issuer_url=ISSUER_URL, resource_server_url=RESOURCE_SERVER_URL),
 )
 

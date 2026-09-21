@@ -9,8 +9,15 @@ from mcp.server.auth.provider import AccessToken, TokenVerifier
 
 
 class KeycloakTokenVerifier(TokenVerifier):
-    def __init__(self, issuer_url: str, audience: str = "account", jwks_ttl_seconds: int = 300):
+    def __init__(
+        self,
+        issuer_url: str,
+        audience: str = "account",
+        jwks_ttl_seconds: int = 300,
+        jwks_base_url: str | None = None,
+    ):
         self.issuer_url = issuer_url.rstrip("/")
+        self.jwks_base_url = (jwks_base_url or issuer_url).rstrip("/")
         self.audience = audience
         self.jwks_ttl_seconds = jwks_ttl_seconds
         self._jwks = None
@@ -19,7 +26,7 @@ class KeycloakTokenVerifier(TokenVerifier):
     def _get_jwks(self) -> dict:
         now = time.monotonic()
         if self._jwks is None or (now - self._jwks_fetched_at) > self.jwks_ttl_seconds:
-            url = f"{self.issuer_url}/protocol/openid-connect/certs"
+            url = f"{self.jwks_base_url}/protocol/openid-connect/certs"
             with urllib.request.urlopen(url, timeout=5) as resp:
                 self._jwks = json.load(resp)
             self._jwks_fetched_at = now
