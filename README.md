@@ -4,7 +4,7 @@ Real implementation of the "scoped financial-data tools for agents" proof of con
 
 ## Status
 
-Phase 1 (Postgres schema, roles, RLS) and Phase 2 (MCP server + Keycloak auth) are complete and locally verified. The showcase UI and Kubernetes/Argo CD deployment are later phases, not yet built.
+Phase 1 (Postgres schema, roles, RLS), Phase 2 (MCP server + Keycloak auth), and Phase 3 (showcase UI) are complete and locally verified. Kubernetes/Argo CD deployment is a later phase, not yet built.
 
 ## Phase 1 quickstart
 
@@ -57,3 +57,23 @@ java -jar karate/karate.jar karate/scoped_access.feature
 ```
 
 Expect `scenarios: 13 | passed: 13 | failed: 0`. An HTML report is written to `target/karate-reports/`.
+
+## Phase 3 quickstart
+
+Requires everything Phase 2 needs, plus the UI's own dependencies.
+
+```bash
+docker compose up -d postgres keycloak
+docker compose run --rm liquibase
+until [ "$(curl -s -o /dev/null -w '%{http_code}' http://localhost:8080/realms/financial-mcp)" = "200" ]; do sleep 1; done
+pip install -r scripts/requirements.txt -r ui/requirements.txt
+uvicorn mcp_server.server:app --port 8000 --log-level warning &
+sleep 2
+uvicorn ui.app:app --port 5000 --log-level warning &
+sleep 2
+python3 scripts/verify_ui.py
+```
+
+Then open `http://localhost:5000/` in a browser and log in as any of the five demo users (`alice.research`/`alice_dev_only`, `bob.risk`/`bob_dev_only`, `carol.trader`/`carol_dev_only`, `dave.support`/`dave_dev_only`, `erin.norole`/`erin_dev_only`) to see the scoped-access boundary work live, through a real login.
+
+Stop both background servers when done: `pkill -f "uvicorn mcp_server.server"`, `pkill -f "uvicorn ui.app"`.
