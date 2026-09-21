@@ -3,8 +3,6 @@ kind: Deployment
 metadata:
   name: ui
   namespace: financial-mcp
-  labels:
-    demo: gitops-proof
 spec:
   replicas: 1
   selector:
