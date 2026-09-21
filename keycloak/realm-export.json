@@ -1,0 +1,66 @@
+{
+  "realm": "financial-mcp",
+  "enabled": true,
+  "roles": {
+    "realm": [
+      {"name": "equity_research"},
+      {"name": "portfolio_risk"},
+      {"name": "trade_execution"},
+      {"name": "client_support"}
+    ]
+  },
+  "clients": [
+    {
+      "clientId": "mcp-server",
+      "publicClient": true,
+      "directAccessGrantsEnabled": true,
+      "enabled": true
+    }
+  ],
+  "users": [
+    {
+      "username": "alice.research",
+      "enabled": true,
+      "emailVerified": true,
+      "email": "alice.research@example.com",
+      "firstName": "Alice",
+      "lastName": "Research",
+      "requiredActions": [],
+      "credentials": [{"type": "password", "value": "alice_dev_only", "temporary": false}],
+      "realmRoles": ["equity_research"]
+    },
+    {
+      "username": "bob.risk",
+      "enabled": true,
+      "emailVerified": true,
+      "email": "bob.risk@example.com",
+      "firstName": "Bob",
+      "lastName": "Risk",
+      "requiredActions": [],
+      "credentials": [{"type": "password", "value": "bob_dev_only", "temporary": false}],
+      "realmRoles": ["portfolio_risk"]
+    },
+    {
+      "username": "carol.trader",
+      "enabled": true,
+      "emailVerified": true,
+      "email": "carol.trader@example.com",
+      "firstName": "Carol",
+      "lastName": "Trader",
+      "requiredActions": [],
+      "credentials": [{"type": "password", "value": "carol_dev_only", "temporary": false}],
+      "realmRoles": ["trade_execution"]
+    },
+    {
+      "username": "dave.support",
+      "enabled": true,
+      "emailVerified": true,
+      "email": "dave.support@example.com",
+      "firstName": "Dave",
+      "lastName": "Support",
+      "requiredActions": [],
+      "credentials": [{"type": "password", "value": "dave_dev_only", "temporary": false}],
+      "realmRoles": ["client_support"]
+    }
+  ]
+}
