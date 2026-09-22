@@ -23,6 +23,21 @@ kind: Job
 metadata:
   name: liquibase-migrate
   namespace: financial-mcp
+  annotations:
+    # spec.template is immutable, and its content changes whenever the
+    # liquibase-changelog ConfigMap's generated name-hash changes (i.e. any
+    # edit to db/liquibase.properties or db/changelog/*) -- a plain Argo CD
+    # sync would then fail outright instead of re-running the migration.
+    # Force=true,Replace=true makes Argo CD delete+recreate the Job instead
+    # of trying (and failing) to patch it in place.
+    argocd.argoproj.io/sync-options: Force=true,Replace=true
+    # Everything else in this app defaults to wave "0"; Argo CD waits for
+    # a wave to report Healthy before starting the next one, so wave "1"
+    # here means Postgres's Deployment must be Available first -- Argo CD
+    # has no ordering by default otherwise, unlike Phase 4's imperative
+    # bootstrap.sh, which explicitly waited for Postgres before applying
+    # this Job.
+    argocd.argoproj.io/sync-wave: "1"
 spec:
   backoffLimit: 3
   template:

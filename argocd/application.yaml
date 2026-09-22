@@ -7,6 +7,9 @@ spec:
   project: default
   source:
     repoURL: https://github.com/someshjha/poc_mcp.git
+    # Points at this working branch for local-demo convenience -- change to
+    # "main" once this work is merged, or Argo CD will keep deploying a
+    # branch that no longer exists (or is stale) after merge/cleanup.
     targetRevision: claude/db-schema-rls
     path: .
   destination:
