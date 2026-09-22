@@ -12,8 +12,12 @@ else
 fi
 
 CURRENT_BRANCH="$(git rev-parse --abbrev-ref HEAD)"
-if ! git diff --quiet "origin/$CURRENT_BRANCH" HEAD -- kustomization.yaml k8s keycloak/realm-export.json db 2>/dev/null; then
-  echo "WARNING: local kustomization.yaml/k8s/keycloak/db state differs from origin/$CURRENT_BRANCH -- Argo CD syncs from the pushed branch, not your working tree. Push first: git push -u origin $CURRENT_BRANCH" >&2
+DRIFT_PATHS="kustomization.yaml k8s keycloak/realm-export.json db"
+DRIFTED=0
+git diff --quiet "origin/$CURRENT_BRANCH" HEAD -- $DRIFT_PATHS 2>/dev/null || DRIFTED=1
+[ -n "$(git status --porcelain -- $DRIFT_PATHS)" ] && DRIFTED=1
+if [ "$DRIFTED" = "1" ]; then
+  echo "WARNING: local kustomization.yaml/k8s/keycloak/db state differs from origin/$CURRENT_BRANCH (committed or uncommitted) -- Argo CD syncs from the pushed branch, not your working tree. Commit and push first: git push -u origin $CURRENT_BRANCH" >&2
 fi
 
 echo "Building images..."

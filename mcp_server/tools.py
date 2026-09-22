@@ -1,6 +1,7 @@
 """The 8 MCP tools. Postgres -- not this code -- enforces the access
 boundary; every tool routes its query through mcp_server.db.scoped_cursor
 and reports whatever Postgres decided."""
+import secrets
 import time
 
 import psycopg2
@@ -151,7 +152,11 @@ def place_order(account_id: str, ticker: str, side: str, quantity: float) -> dic
             cur.execute("select 1 from market_data where ticker = %s", (ticker,))
             if cur.fetchone() is None:
                 raise ValueError(f"Unknown ticker: {ticker}")
-            order_id = f"ORD-{username}-{ticker}-{int(time.time())}"
+            # int(time.time()) alone collides on two orders from the same
+            # user+ticker within the same second (hit this empirically via
+            # repeated verify_ui.py runs) -- the random suffix guarantees
+            # uniqueness regardless of call timing.
+            order_id = f"ORD-{username}-{ticker}-{int(time.time())}-{secrets.token_hex(4)}"
             cur.execute(
                 "insert into orders (order_id, account_id, ticker, side, quantity, status, submitted_at) "
                 "values (%s, %s, %s, %s, %s, 'filled', now())",

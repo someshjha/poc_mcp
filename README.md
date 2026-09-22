@@ -100,7 +100,7 @@ Teardown: `kind delete cluster --name financial-mcp`.
 
 ## Phase 5 quickstart (Argo CD GitOps)
 
-Requires everything Phase 4 needs, plus a pushed branch (Argo CD syncs from git, not your working tree).
+Requires everything Phase 4 needs, plus a pushed branch (Argo CD syncs from git, not your working tree). If a Phase 4 cluster (deployed via plain `kubectl apply`, not Argo CD) is still running, tear it down first -- Argo CD will collide with that deployment's untracked `ConfigMap`s and Job rather than adopting them cleanly: `kind delete cluster --name financial-mcp`.
 
 ```bash
 git push -u origin claude/db-schema-rls
@@ -113,7 +113,7 @@ python3 scripts/verify_ui.py
 java -jar karate/karate.jar karate/scoped_access.feature
 ```
 
-`argocd/bootstrap.sh` creates (or reuses) the `kind` cluster, builds and loads the same three local images Phase 4 used, installs Argo CD, and applies a single `Application` that syncs everything in `k8s/` from this repo's `claude/db-schema-rls` branch -- change `targetRevision` in `argocd/application.yaml` to `main` once this work is merged. From here on, `kubectl apply` is no longer how you deploy: edit a manifest, commit, push, and Argo CD reconciles the cluster automatically (`syncPolicy.automated` with `selfHeal: true` -- it also reverts any manual `kubectl edit` drift back to what's in git).
+`argocd/bootstrap.sh` creates (or reuses) the `kind` cluster, builds and loads the same three local images Phase 4 used, installs Argo CD, and applies a single `Application` that syncs everything under the repo root's `kustomization.yaml` (which pulls in `k8s/`, `keycloak/`, and `db/`) from this repo's `claude/db-schema-rls` branch -- change `targetRevision` in `argocd/application.yaml` to `main` once this work is merged. From here on, `kubectl apply` is no longer how you deploy: edit a manifest, commit, push, and Argo CD reconciles the cluster automatically (`syncPolicy.automated` with `selfHeal: true` -- it also reverts any manual `kubectl edit` drift back to what's in git).
 
 Argo CD UI: `kubectl port-forward svc/argocd-server -n argocd 8081:443`, then open `https://localhost:8081` (username `admin`, password printed by `argocd/install.sh`).
 

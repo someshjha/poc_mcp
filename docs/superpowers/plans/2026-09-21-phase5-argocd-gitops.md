@@ -100,7 +100,7 @@ Co-Authored-By: Claude Sonnet 5 <noreply@anthropic.com>"
 - Create: `argocd/application.yaml`
 
 **Interfaces:**
-- Consumes: Task 1's `k8s/kustomization.yaml` (the `Application`'s `spec.source.path: k8s` relies on Kustomize auto-detection via that file's presence).
+- Consumes: Task 1's `kustomization.yaml` **at the repo root** (moved there after Task 1's own review found that a `k8s/`-located kustomization needs `../` generator references that trip Kustomize's default `LoadRestrictionsRootOnly` boundary, which has no per-Application Argo CD override -- only a cluster-wide `argocd-cm` setting that would weaken that boundary for every future Application. Repo-root placement with paths pointing down into `k8s/`, `keycloak/`, `db/` keeps every generator input inside the kustomization root, so no flag or cluster-wide config is needed anywhere). The `Application`'s `spec.source.path` is therefore `.`, not `k8s`.
 - Produces: a repeatable Argo CD install step and one `Application` resource that Task 3's `bootstrap.sh` applies.
 
 - [ ] **Step 1: Write `argocd/install.sh`**
@@ -139,7 +139,7 @@ spec:
   source:
     repoURL: https://github.com/someshjha/poc_mcp.git
     targetRevision: claude/db-schema-rls
-    path: k8s
+    path: .
   destination:
     server: https://kubernetes.default.svc
     namespace: financial-mcp
@@ -268,7 +268,7 @@ python3 scripts/verify_ui.py
 java -jar karate/karate.jar karate/scoped_access.feature
 \`\`\`
 
-`argocd/bootstrap.sh` creates (or reuses) the `kind` cluster, builds and loads the same three local images Phase 4 used, installs Argo CD, and applies a single `Application` that syncs everything in `k8s/` from this repo's `claude/db-schema-rls` branch -- change `targetRevision` in `argocd/application.yaml` to `main` once this work is merged. From here on, `kubectl apply` is no longer how you deploy: edit a manifest, commit, push, and Argo CD reconciles the cluster automatically (`syncPolicy.automated` with `selfHeal: true` -- it also reverts any manual `kubectl edit` drift back to what's in git).
+`argocd/bootstrap.sh` creates (or reuses) the `kind` cluster, builds and loads the same three local images Phase 4 used, installs Argo CD, and applies a single `Application` that syncs everything under the repo root's `kustomization.yaml` (which pulls in `k8s/`, `keycloak/`, and `db/`) from this repo's `claude/db-schema-rls` branch -- change `targetRevision` in `argocd/application.yaml` to `main` once this work is merged. From here on, `kubectl apply` is no longer how you deploy: edit a manifest, commit, push, and Argo CD reconciles the cluster automatically (`syncPolicy.automated` with `selfHeal: true` -- it also reverts any manual `kubectl edit` drift back to what's in git).
 
 Argo CD UI: `kubectl port-forward svc/argocd-server -n argocd 8081:443`, then open `https://localhost:8081` (username `admin`, password printed by `argocd/install.sh`).
 
